@@ -6,7 +6,7 @@
     "test": "npm run build && tsc -p test/tsconfig.json && node --test test/*.test.ts"
   },
   "devDependencies": {
-    "@types/node": "24.19.1",
+    "@types/node": "24.19.2",
     "typescript": "7.0.2"
   }
 }
