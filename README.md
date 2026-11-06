@@ -53,6 +53,8 @@ jobs:
 
 Replace the paths with paths from your repository. The action fetches only the Git history it needs to distinguish source changes from Dependabot changes.
 
+Both the property list `project.pbxproj` and JSON `project.xcproj` formats are supported. For a JSON project, use `App.xcodeproj/project.xcproj` under `projects`. You can list projects using either format together. The workspace and `Package.resolved` paths are the same for both formats.
+
 The workflow must use `pull_request_target` because it commits the synchronized files to the pull request branch. It only accepts pull requests whose branch belongs to the same repository. Do not add steps that build, test, install dependencies, or otherwise execute code from the checked-out pull request in this privileged workflow. See GitHub's guidance on [secure use of `pull_request_target`](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
 
 If your repository or organization restricts `pull_request_target`, allow this event in its GitHub Actions policy before using the workflow.
@@ -73,7 +75,7 @@ If you use a standalone Xcode workspace, point `resolved-file` at its shared res
       Framework.xcodeproj/project.pbxproj
 ```
 
-An `.xcworkspace` references its member projects in `contents.xcworkspacedata`. The action does not discover those projects automatically, so list each project's `project.pbxproj` explicitly under `projects`.
+An `.xcworkspace` references its member projects in `contents.xcworkspacedata`. The action does not discover those projects automatically, so list each project's `project.pbxproj` or `project.xcproj` explicitly under `projects`.
 
 ### 2. Point Dependabot at the generated manifest
 
@@ -102,7 +104,7 @@ Keep both the generated `Package.swift` and the shared `Package.resolved` under 
 | --- | --- | --- |
 | `resolved-file` | Yes | Repository-relative path to the shared `Package.resolved` in a standalone `.xcworkspace` or a project's internal workspace. The generated `Package.swift` is placed in the same directory. |
 | `manifests` | Yes | Newline-separated, repository-relative paths to the `Package.swift` files whose dependencies should be included. |
-| `projects` | No | Newline-separated, repository-relative paths to `project.pbxproj` files whose Swift package dependencies should be included. |
+| `projects` | No | Newline-separated, repository-relative paths to `project.pbxproj` or `project.xcproj` files whose Swift package dependencies should be included. |
 
 All paths must point to regular files inside the repository. At least one path is required under `manifests`.
 

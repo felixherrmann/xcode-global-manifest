@@ -1,0 +1,16 @@
+{
+  "default-configuration": "Release",
+  "configurations": ["Debug", "Release"],
+  "localizations": { "development": "en" },
+  "packages": [
+    {
+      "kind": "remote",
+      "repository": "https://github.com/example/Package.git",
+      "version": { "version": "1.0.0" },
+      "traits": ["Minimal"],
+    },
+    { "kind": "local", "path": "Packages/Local" },
+  ],
+  "files": [],
+  "build-settings": { "SWIFT_VERSION": "6.0" },
+}

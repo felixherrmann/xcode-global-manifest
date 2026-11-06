@@ -8,7 +8,7 @@ inputs:
     description: Newline-separated Package.swift paths to sync
     required: true
   projects:
-    description: Newline-separated project.pbxproj paths to sync
+    description: Newline-separated project.pbxproj or project.xcproj paths to sync
     required: false
 outputs:
   changed:

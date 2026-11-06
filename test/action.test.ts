@@ -118,63 +118,69 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
   }
 });
 
-test('action expands a shallow checkout and creates the global manifest in a standalone workspace', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'global-manifest-workspace-'));
-  const remote = path.join(dir, 'remote.git');
-  const source = path.join(dir, 'source');
-  const work = path.join(dir, 'work');
-  const eventPath = path.join(dir, 'event.json');
-  const outputPath = path.join(dir, 'output');
-  const src = 'Packages/App/Package.swift';
-  const project = 'App.xcodeproj/project.pbxproj';
-  const generated = 'App.xcworkspace/xcshareddata/swiftpm/Package.swift';
-  const resolved = generated.replace('Package.swift', 'Package.resolved');
+for (const format of ['pbxproj', 'xcproj']) {
+  test(`action expands a shallow checkout and creates the global manifest in a standalone workspace (${format})`, () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'global-manifest-workspace-'));
+    const remote = path.join(dir, 'remote.git');
+    const source = path.join(dir, 'source');
+    const work = path.join(dir, 'work');
+    const eventPath = path.join(dir, 'event.json');
+    const outputPath = path.join(dir, 'output');
+    const src = 'Packages/App/Package.swift';
+    const project = `App.xcodeproj/project.${format}`;
+    const generated = 'App.xcworkspace/xcshareddata/swiftpm/Package.swift';
+    const resolved = generated.replace('Package.swift', 'Package.resolved');
 
-  try {
-    fs.cpSync(path.join(fixtures, 'scenarios/standalone-workspace/head'), source, { recursive: true });
-    git(dir, 'init', '--bare', '--initial-branch=main', remote);
-    git(dir, 'init', '--initial-branch=main', source);
-    git(source, 'config', 'user.name', 'Test');
-    git(source, 'config', 'user.email', 'test@example.com');
-    git(source, 'add', '.');
-    git(source, 'commit', '-m', 'base');
-    git(source, 'remote', 'add', 'origin', remote);
-    git(source, 'push', 'origin', 'main');
-    const base = git(source, 'rev-parse', 'HEAD');
-    git(source, 'checkout', '-b', 'workspace');
-    fs.writeFileSync(path.join(source, 'workspace-change.txt'), 'Pull request change\n');
-    git(source, 'add', 'workspace-change.txt');
-    git(source, 'commit', '-m', 'workspace change');
-    git(source, 'push', 'origin', 'workspace');
-    const head = git(source, 'rev-parse', 'HEAD');
-    git(dir, 'clone', '--depth=1', '--branch', 'workspace', `file://${remote}`, work);
-    assert.equal(git(work, 'rev-parse', '--is-shallow-repository'), 'true');
+    try {
+      fs.cpSync(path.join(fixtures, 'scenarios/standalone-workspace/head'), source, { recursive: true });
+      if (format === 'xcproj') {
+        fs.unlinkSync(path.join(source, 'App.xcodeproj/project.pbxproj'));
+        fs.writeFileSync(path.join(source, project), readFixture('templates/App.xcodeproj/project.xcproj'));
+      }
+      git(dir, 'init', '--bare', '--initial-branch=main', remote);
+      git(dir, 'init', '--initial-branch=main', source);
+      git(source, 'config', 'user.name', 'Test');
+      git(source, 'config', 'user.email', 'test@example.com');
+      git(source, 'add', '.');
+      git(source, 'commit', '-m', 'base');
+      git(source, 'remote', 'add', 'origin', remote);
+      git(source, 'push', 'origin', 'main');
+      const base = git(source, 'rev-parse', 'HEAD');
+      git(source, 'checkout', '-b', 'workspace');
+      fs.writeFileSync(path.join(source, 'workspace-change.txt'), 'Pull request change\n');
+      git(source, 'add', 'workspace-change.txt');
+      git(source, 'commit', '-m', 'workspace change');
+      git(source, 'push', 'origin', 'workspace');
+      const head = git(source, 'rev-parse', 'HEAD');
+      git(dir, 'clone', '--depth=1', '--branch', 'workspace', `file://${remote}`, work);
+      assert.equal(git(work, 'rev-parse', '--is-shallow-repository'), 'true');
 
-    fs.writeFileSync(eventPath, JSON.stringify({ pull_request: {
-      base: { sha: base, repo: { full_name: 'owner/repo' } },
-      head: { sha: head, ref: 'workspace', repo: { full_name: 'owner/repo' } },
-    } }));
-    fs.writeFileSync(outputPath, '');
-    const result = spawnSync(process.execPath, [action], { encoding: 'utf8', env: {
-      ...process.env,
-      GITHUB_WORKSPACE: work,
-      GITHUB_REPOSITORY: 'owner/repo',
-      GITHUB_EVENT_PATH: eventPath,
-      GITHUB_OUTPUT: outputPath,
-      'INPUT_RESOLVED-FILE': resolved,
-      INPUT_MANIFESTS: src,
-      INPUT_PROJECTS: project,
-    } });
+      fs.writeFileSync(eventPath, JSON.stringify({ pull_request: {
+        base: { sha: base, repo: { full_name: 'owner/repo' } },
+        head: { sha: head, ref: 'workspace', repo: { full_name: 'owner/repo' } },
+      } }));
+      fs.writeFileSync(outputPath, '');
+      const result = spawnSync(process.execPath, [action], { encoding: 'utf8', env: {
+        ...process.env,
+        GITHUB_WORKSPACE: work,
+        GITHUB_REPOSITORY: 'owner/repo',
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_OUTPUT: outputPath,
+        'INPUT_RESOLVED-FILE': resolved,
+        INPUT_MANIFESTS: src,
+        INPUT_PROJECTS: project,
+      } });
 
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(git(work, 'rev-parse', '--is-shallow-repository'), 'false');
-    assert.match(fs.readFileSync(outputPath, 'utf8'), /changed=true/);
-    assert.equal(
-      git(work, 'show', `HEAD:${generated}`),
-      readFixture(`scenarios/standalone-workspace/expected/${generated}`).trim(),
-    );
-    assert.equal(git(dir, '--git-dir', remote, 'rev-parse', 'workspace'), git(work, 'rev-parse', 'HEAD'));
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(git(work, 'rev-parse', '--is-shallow-repository'), 'false');
+      assert.match(fs.readFileSync(outputPath, 'utf8'), /changed=true/);
+      assert.equal(
+        git(work, 'show', `HEAD:${generated}`),
+        readFixture(`scenarios/standalone-workspace/expected/${generated}`).trim(),
+      );
+      assert.equal(git(dir, '--git-dir', remote, 'rev-parse', 'workspace'), git(work, 'rev-parse', 'HEAD'));
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}

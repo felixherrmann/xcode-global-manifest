@@ -76,8 +76,6 @@ test('Swift document updates all matching occurrences while preserving other tex
   assert.equal(document.update(new Map([[fixtureURL, exact('1.1.0')]])), source);
 });
 
-test('unsupported project formats fail rather than appearing to have no dependencies', () => {
+test('unsupported project extensions are rejected', () => {
   assert.throws(() => xcodeProject.read(project('1.0.0'), projectPath), /unsupported Xcode project format/);
-  assert.throws(() => xcodeProject.read(project('1.0.0'), 'project.pbxproj'), /JSON Xcode project format is not supported yet/);
-  assert.throws(() => xcodeProject.read('{}', 'project.pbxproj'), /JSON Xcode project format is not supported yet/);
 });
