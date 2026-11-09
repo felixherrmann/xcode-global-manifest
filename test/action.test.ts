@@ -79,6 +79,15 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
     const synced = git(work, 'rev-parse', 'HEAD');
     assert.equal(git(work, 'show', `${synced}:${src}`), sourceUpdated.trim());
     assert.equal(git(dir, '--git-dir', remote, 'rev-parse', 'update'), synced);
+    assert.equal(git(work, 'log', '-1', '--format=%B'), [
+      'Sync global Swift manifest',
+      '',
+      '[dependabot skip]',
+      '',
+      'Generated-by: felixherrmann/xcode-global-manifest',
+      `Global-manifest: ${generated}`,
+      `Source-commit: ${head}`,
+    ].join('\n'));
 
     const second = run(base, synced, 'update');
     assert.equal(second.status, 0, second.stderr);
@@ -179,6 +188,11 @@ for (const format of ['pbxproj', 'xcproj']) {
         readFixture(`scenarios/standalone-workspace/expected/${generated}`).trim(),
       );
       assert.equal(git(dir, '--git-dir', remote, 'rev-parse', 'workspace'), git(work, 'rev-parse', 'HEAD'));
+      assert.equal(git(work, 'log', '-1', '--format=%(trailers:only)'), [
+        'Generated-by: felixherrmann/xcode-global-manifest',
+        `Global-manifest: ${generated}`,
+        `Source-commit: ${head}`,
+      ].join('\n'));
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

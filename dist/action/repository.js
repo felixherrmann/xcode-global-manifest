@@ -41,7 +41,7 @@ function openRepository(root) {
         }
         return { base, head };
     }
-    function commitAndPush(updates, branch) {
+    function commitAndPush(updates, config) {
         const changed = Object.keys(updates);
         if (!changed.length)
             return undefined;
@@ -51,8 +51,15 @@ function openRepository(root) {
             node_fs_1.default.writeFileSync(absolute, content);
         }
         git(root, 'add', '--', ...changed);
-        git(root, '-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '-m', 'Sync global Swift manifest [dependabot skip]');
-        git(root, 'push', 'origin', `HEAD:refs/heads/${branch}`);
+        const body = [
+            '[dependabot skip]',
+            '',
+            'Generated-by: felixherrmann/xcode-global-manifest',
+            `Global-manifest: ${config.globalPath}`,
+            `Source-commit: ${config.pullRequest.head.sha}`,
+        ].join('\n');
+        git(root, '-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '-m', 'Sync global Swift manifest', '-m', body);
+        git(root, 'push', 'origin', `HEAD:refs/heads/${config.pullRequest.head.ref}`);
         return git(root, 'rev-parse', 'HEAD').trim();
     }
     return { readComparison, commitAndPush };

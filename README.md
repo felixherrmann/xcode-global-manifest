@@ -134,6 +134,8 @@ Add or remove packages in their real source location: a selected `Package.swift`
 
 When Dependabot opens an update pull request, it changes the generated manifest and `Package.resolved`. The action copies the new requirement into every selected source that declares that package and commits the result to the Dependabot branch.
 
+Sync commits use `Sync global Swift manifest` as their subject. The body contains `[dependabot skip]` so Dependabot can replace the generated commit when rebasing its pull request. The `Generated-by`, `Global-manifest`, and `Source-commit` Git trailers identify the action, the generated manifest path, and the pull request head SHA that was synchronized.
+
 If a developer and Dependabot change different packages in the same pull request, both changes are kept. If both change the same package incompatibly, the action stops and asks you to resolve the conflict instead of choosing one silently.
 
 ## Supported dependencies

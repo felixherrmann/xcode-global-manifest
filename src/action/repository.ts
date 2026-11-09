@@ -6,7 +6,7 @@ import type { ActionConfig } from './config';
 
 export type Repository = {
   readComparison(config: ActionConfig): { base: Files; head: Files };
-  commitAndPush(updates: Files, branch: string): string | undefined;
+  commitAndPush(updates: Files, config: ActionConfig): string | undefined;
 };
 
 export function openRepository(root: string): Repository {
@@ -42,7 +42,7 @@ export function openRepository(root: string): Repository {
     return { base, head };
   }
 
-  function commitAndPush(updates: Files, branch: string): string | undefined {
+  function commitAndPush(updates: Files, config: ActionConfig): string | undefined {
     const changed = Object.keys(updates);
     if (!changed.length) return undefined;
 
@@ -52,9 +52,16 @@ export function openRepository(root: string): Repository {
       fs.writeFileSync(absolute, content);
     }
     git(root, 'add', '--', ...changed);
+    const body = [
+      '[dependabot skip]',
+      '',
+      'Generated-by: felixherrmann/xcode-global-manifest',
+      `Global-manifest: ${config.globalPath}`,
+      `Source-commit: ${config.pullRequest.head.sha}`,
+    ].join('\n');
     git(root, '-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit', '-m', 'Sync global Swift manifest [dependabot skip]');
-    git(root, 'push', 'origin', `HEAD:refs/heads/${branch}`);
+      'commit', '-m', 'Sync global Swift manifest', '-m', body);
+    git(root, 'push', 'origin', `HEAD:refs/heads/${config.pullRequest.head.ref}`);
     return git(root, 'rev-parse', 'HEAD').trim();
   }
 

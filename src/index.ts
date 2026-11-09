@@ -14,7 +14,7 @@ function main(): void {
     sources: config.sources,
     globalPath: config.globalPath,
   });
-  const commitSHA = repository.commitAndPush(updates, config.pullRequest.head.ref);
+  const commitSHA = repository.commitAndPush(updates, config);
 
   const output = commitSHA ? `changed=true\ncommit-sha=${commitSHA}\n` : 'changed=false\n';
   fs.appendFileSync(config.outputPath, output);

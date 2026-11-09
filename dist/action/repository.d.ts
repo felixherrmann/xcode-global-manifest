@@ -5,6 +5,6 @@ export type Repository = {
         base: Files;
         head: Files;
     };
-    commitAndPush(updates: Files, branch: string): string | undefined;
+    commitAndPush(updates: Files, config: ActionConfig): string | undefined;
 };
 export declare function openRepository(root: string): Repository;
