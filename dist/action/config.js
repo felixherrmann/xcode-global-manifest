@@ -16,29 +16,29 @@ function readConfig() {
         throw new Error('the action requires a same-repository pull_request_target event');
     }
     const resolvedPath = process.env['INPUT_RESOLVED-FILE'];
-    const manifests = inputPaths(process.env.INPUT_MANIFESTS || '');
-    const projects = inputPaths(process.env.INPUT_PROJECTS || '');
-    if (!resolvedPath || !manifests.length)
-        throw new Error('resolved-file and at least one manifest are required');
-    if (projects.some(file => manifests.includes(file))) {
-        throw new Error('a source path cannot be both a manifest and an Xcode project');
-    }
+    const sourcePaths = inputPaths(process.env.INPUT_SOURCES || '');
+    if (!resolvedPath || !sourcePaths.length)
+        throw new Error('resolved-file and at least one source are required');
     const globalPath = node_path_1.default.posix.join(node_path_1.default.posix.dirname(resolvedPath), 'Package.swift');
-    if ([...manifests, ...projects].includes(globalPath)) {
-        throw new Error('the generated manifest cannot be a source manifest or Xcode project');
+    if (sourcePaths.includes(globalPath)) {
+        throw new Error('the generated manifest cannot be a source');
     }
     return {
         root: required('GITHUB_WORKSPACE'),
         pullRequest,
         resolvedPath,
         globalPath,
-        sources: [
-            ...manifests.map(file => ({ file, format: swift_1.swiftManifest })),
-            ...projects.map(file => ({ file, format: xcode_project_1.xcodeProject })),
-        ],
-        watchedPaths: [...manifests, ...projects, globalPath],
+        sources: sourcePaths.map(sourceFile),
+        watchedPaths: [...sourcePaths, globalPath],
         outputPath: required('GITHUB_OUTPUT'),
     };
+}
+function sourceFile(file) {
+    if (node_path_1.default.posix.basename(file) === 'Package.swift')
+        return { file, format: swift_1.swiftManifest };
+    if (file.endsWith('.pbxproj') || file.endsWith('.xcproj'))
+        return { file, format: xcode_project_1.xcodeProject };
+    throw new Error(`${file}: unsupported source format; expected Package.swift, .pbxproj, or .xcproj`);
 }
 function inputPaths(input) {
     return [...new Set(input.split('\n').map(value => value.trim()).filter(Boolean))];

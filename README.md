@@ -44,16 +44,15 @@ jobs:
       - uses: felixherrmann/xcode-global-manifest@v1
         with:
           resolved-file: App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-          manifests: |
+          sources: |
             Packages/Core/Package.swift
             Packages/Feature/Package.swift
-          projects: |
             App.xcodeproj/project.pbxproj
 ```
 
 Replace the paths with paths from your repository. The action fetches only the Git history it needs to distinguish source changes from Dependabot changes.
 
-Both the property list `project.pbxproj` and JSON `project.xcproj` formats are supported. For a JSON project, use `App.xcodeproj/project.xcproj` under `projects`. You can list projects using either format together. The workspace and `Package.resolved` paths are the same for both formats.
+Both the property list `project.pbxproj` and JSON `project.xcproj` formats are supported. For a JSON project, use `App.xcodeproj/project.xcproj` under `sources`. You can list Swift manifests and projects using either format together; the action selects the parser from each filename. The workspace and `Package.resolved` paths are the same for both project formats.
 
 The workflow must use `pull_request_target` because it commits the synchronized files to the pull request branch. It only accepts pull requests whose branch belongs to the same repository. Do not add steps that build, test, install dependencies, or otherwise execute code from the checked-out pull request in this privileged workflow. See GitHub's guidance on [secure use of `pull_request_target`](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
 
@@ -67,15 +66,14 @@ If you use a standalone Xcode workspace, point `resolved-file` at its shared res
 - uses: felixherrmann/xcode-global-manifest@v1
   with:
     resolved-file: App.xcworkspace/xcshareddata/swiftpm/Package.resolved
-    manifests: |
+    sources: |
       Packages/Core/Package.swift
       Packages/Feature/Package.swift
-    projects: |
       App.xcodeproj/project.pbxproj
       Framework.xcodeproj/project.pbxproj
 ```
 
-An `.xcworkspace` references its member projects in `contents.xcworkspacedata`. The action does not discover those projects automatically, so list each project's `project.pbxproj` or `project.xcproj` explicitly under `projects`.
+An `.xcworkspace` references its member projects in `contents.xcworkspacedata`. The action does not discover those projects automatically, so list each project's `project.pbxproj` or `project.xcproj` explicitly under `sources`.
 
 ### 2. Point Dependabot at the generated manifest
 
@@ -103,10 +101,9 @@ Keep both the generated `Package.swift` and the shared `Package.resolved` under 
 | Input | Required | Description |
 | --- | --- | --- |
 | `resolved-file` | Yes | Repository-relative path to the shared `Package.resolved` in a standalone `.xcworkspace` or a project's internal workspace. The generated `Package.swift` is placed in the same directory. |
-| `manifests` | Yes | Newline-separated, repository-relative paths to the `Package.swift` files whose dependencies should be included. |
-| `projects` | No | Newline-separated, repository-relative paths to `project.pbxproj` or `project.xcproj` files whose Swift package dependencies should be included. |
+| `sources` | Yes | Newline-separated, repository-relative paths to `Package.swift`, `project.pbxproj`, or `project.xcproj` files whose dependencies should be included. |
 
-All paths must point to regular files inside the repository. At least one path is required under `manifests`.
+All paths must point to regular files inside the repository. At least one path is required under `sources`; you can list Swift manifests, Xcode projects, or both. Do not include the generated manifest.
 
 ## Outputs
 
@@ -122,7 +119,7 @@ Give the action step an `id` if a later step needs an output:
   uses: felixherrmann/xcode-global-manifest@v1
   with:
     resolved-file: App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-    manifests: Packages/Core/Package.swift
+    sources: Packages/Core/Package.swift
 
 - if: steps.manifest.outputs.changed == 'true'
   run: echo "The manifest was synchronized"

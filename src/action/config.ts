@@ -28,15 +28,11 @@ export function readConfig(): ActionConfig {
   }
 
   const resolvedPath = process.env['INPUT_RESOLVED-FILE'];
-  const manifests = inputPaths(process.env.INPUT_MANIFESTS || '');
-  const projects = inputPaths(process.env.INPUT_PROJECTS || '');
-  if (!resolvedPath || !manifests.length) throw new Error('resolved-file and at least one manifest are required');
-  if (projects.some(file => manifests.includes(file))) {
-    throw new Error('a source path cannot be both a manifest and an Xcode project');
-  }
+  const sourcePaths = inputPaths(process.env.INPUT_SOURCES || '');
+  if (!resolvedPath || !sourcePaths.length) throw new Error('resolved-file and at least one source are required');
   const globalPath = path.posix.join(path.posix.dirname(resolvedPath), 'Package.swift');
-  if ([...manifests, ...projects].includes(globalPath)) {
-    throw new Error('the generated manifest cannot be a source manifest or Xcode project');
+  if (sourcePaths.includes(globalPath)) {
+    throw new Error('the generated manifest cannot be a source');
   }
 
   return {
@@ -44,13 +40,16 @@ export function readConfig(): ActionConfig {
     pullRequest,
     resolvedPath,
     globalPath,
-    sources: [
-      ...manifests.map(file => ({ file, format: swiftManifest })),
-      ...projects.map(file => ({ file, format: xcodeProject })),
-    ],
-    watchedPaths: [...manifests, ...projects, globalPath],
+    sources: sourcePaths.map(sourceFile),
+    watchedPaths: [...sourcePaths, globalPath],
     outputPath: required('GITHUB_OUTPUT'),
   };
+}
+
+function sourceFile(file: string): SourceFile {
+  if (path.posix.basename(file) === 'Package.swift') return { file, format: swiftManifest };
+  if (file.endsWith('.pbxproj') || file.endsWith('.xcproj')) return { file, format: xcodeProject };
+  throw new Error(`${file}: unsupported source format; expected Package.swift, .pbxproj, or .xcproj`);
 }
 
 function inputPaths(input: string): string[] {

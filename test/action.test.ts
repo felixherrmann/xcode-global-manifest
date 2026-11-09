@@ -47,8 +47,7 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
       GITHUB_EVENT_PATH: eventPath,
       GITHUB_OUTPUT: outputPath,
       'INPUT_RESOLVED-FILE': resolved,
-      INPUT_MANIFESTS: src,
-      INPUT_PROJECTS: '',
+      INPUT_SOURCES: src,
     } });
   };
   try {
@@ -176,8 +175,7 @@ for (const format of ['pbxproj', 'xcproj']) {
         GITHUB_EVENT_PATH: eventPath,
         GITHUB_OUTPUT: outputPath,
         'INPUT_RESOLVED-FILE': resolved,
-        INPUT_MANIFESTS: src,
-        INPUT_PROJECTS: project,
+        INPUT_SOURCES: `${src}\n${project}`,
       } });
 
       assert.equal(result.status, 0, result.stderr);

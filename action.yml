@@ -4,12 +4,9 @@ inputs:
   resolved-file:
     description: Path to Package.resolved in a standalone or project workspace, relative to the repository root
     required: true
-  manifests:
-    description: Newline-separated Package.swift paths to sync
+  sources:
+    description: Newline-separated Package.swift, project.pbxproj, or project.xcproj paths to sync
     required: true
-  projects:
-    description: Newline-separated project.pbxproj or project.xcproj paths to sync
-    required: false
 outputs:
   changed:
     description: Whether the action committed a change
