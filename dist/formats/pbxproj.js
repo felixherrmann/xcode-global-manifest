@@ -91,6 +91,12 @@ function parseProject(source, file) {
     }
     return declarations;
 }
+function projectScalar(value) {
+    // Match Xcode's bare scalars, excluding comment starts and special underscore sequences.
+    const unquoted = value.length > 0 && !/[^A-Za-z0-9_./$]/.test(value)
+        && !value.includes('//') && !value.includes('___');
+    return unquoted ? value : (0, syntax_1.quote)(value);
+}
 function renderProjectRule(rule, source, start, file) {
     if (rule.kind === 'closed')
         (0, syntax_1.fail)(file, source, start, 'inclusive Swift range cannot be represented in an Xcode project');
@@ -99,20 +105,20 @@ function renderProjectRule(rule, source, start, file) {
     let props;
     switch (rule.kind) {
         case 'exact':
-            props = ['kind = exactVersion', `version = ${(0, syntax_1.quote)(rule.value)}`];
+            props = ['kind = exactVersion', `version = ${projectScalar(rule.value)}`];
             break;
         case 'major':
-            props = ['kind = upToNextMajorVersion', `minimumVersion = ${(0, syntax_1.quote)(rule.value)}`];
+            props = ['kind = upToNextMajorVersion', `minimumVersion = ${projectScalar(rule.value)}`];
             break;
         case 'minor':
-            props = ['kind = upToNextMinorVersion', `minimumVersion = ${(0, syntax_1.quote)(rule.value)}`];
+            props = ['kind = upToNextMinorVersion', `minimumVersion = ${projectScalar(rule.value)}`];
             break;
         case 'range':
-            props = ['kind = versionRange', `minimumVersion = ${(0, syntax_1.quote)(rule.min)}`, `maximumVersion = ${(0, syntax_1.quote)(rule.max)}`];
+            props = ['kind = versionRange', `minimumVersion = ${projectScalar(rule.min)}`, `maximumVersion = ${projectScalar(rule.max)}`];
             break;
         case 'branch':
         case 'revision':
-            props = [`kind = ${rule.kind}`, `${rule.kind} = ${(0, syntax_1.quote)(rule.value)}`];
+            props = [`kind = ${rule.kind}`, `${rule.kind} = ${projectScalar(rule.value)}`];
             break;
     }
     return `{\n${props.map(p => `${inside}${p};`).join('\n')}\n${indent}}`;

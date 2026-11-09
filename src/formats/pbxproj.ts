@@ -94,17 +94,24 @@ export function parseProject(source: string, file: string): Occurrence[] {
   return declarations;
 }
 
+function projectScalar(value: string): string {
+  // Match Xcode's bare scalars, excluding comment starts and special underscore sequences.
+  const unquoted = value.length > 0 && !/[^A-Za-z0-9_./$]/.test(value)
+    && !value.includes('//') && !value.includes('___');
+  return unquoted ? value : quote(value);
+}
+
 export function renderProjectRule(rule: Rule, source: string, start: number, file: string): string {
   if (rule.kind === 'closed') fail(file, source, start, 'inclusive Swift range cannot be represented in an Xcode project');
   const indent = source.slice(source.lastIndexOf('\n', start - 1) + 1, start).match(/^\s*/)?.[0] || '';
   const inside = `${indent}\t`;
   let props: string[];
   switch (rule.kind) {
-    case 'exact': props = ['kind = exactVersion', `version = ${quote(rule.value)}`]; break;
-    case 'major': props = ['kind = upToNextMajorVersion', `minimumVersion = ${quote(rule.value)}`]; break;
-    case 'minor': props = ['kind = upToNextMinorVersion', `minimumVersion = ${quote(rule.value)}`]; break;
-    case 'range': props = ['kind = versionRange', `minimumVersion = ${quote(rule.min)}`, `maximumVersion = ${quote(rule.max)}`]; break;
-    case 'branch': case 'revision': props = [`kind = ${rule.kind}`, `${rule.kind} = ${quote(rule.value)}`]; break;
+    case 'exact': props = ['kind = exactVersion', `version = ${projectScalar(rule.value)}`]; break;
+    case 'major': props = ['kind = upToNextMajorVersion', `minimumVersion = ${projectScalar(rule.value)}`]; break;
+    case 'minor': props = ['kind = upToNextMinorVersion', `minimumVersion = ${projectScalar(rule.value)}`]; break;
+    case 'range': props = ['kind = versionRange', `minimumVersion = ${projectScalar(rule.min)}`, `maximumVersion = ${projectScalar(rule.max)}`]; break;
+    case 'branch': case 'revision': props = [`kind = ${rule.kind}`, `${rule.kind} = ${projectScalar(rule.value)}`]; break;
   }
   return `{\n${props.map(p => `${inside}${p};`).join('\n')}\n${indent}}`;
 }
