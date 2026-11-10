@@ -24,6 +24,7 @@ function config(inputs: Record<string, string | undefined>) {
     GITHUB_OUTPUT: path.join(dir, 'output'),
     'INPUT_RESOLVED-FILE': resolvedPath,
     INPUT_SOURCES: 'Package.swift',
+    'INPUT_SWIFT-TOOLS-VERSION': undefined,
     ...inputs,
   };
   const previous = new Map(Object.keys(env).map(key => [key, process.env[key]]));
@@ -80,5 +81,20 @@ test('sources reject the generated manifest', () => {
 test('sources reject unsupported filenames', () => {
   for (const file of ['Other.swift', 'project.json', 'App.xcodeproj', 'App.xcworkspace']) {
     assert.throws(() => config({ INPUT_SOURCES: file }), /unsupported source format/);
+  }
+});
+
+test('Swift tools version defaults to 5.9 and accepts major.minor and patch versions', () => {
+  for (const value of [undefined, '', ' \t ']) {
+    assert.equal(config({ 'INPUT_SWIFT-TOOLS-VERSION': value }).swiftToolsVersion, '5.9');
+  }
+  for (const value of ['5.9', '6.0', '6.0.1']) {
+    assert.equal(config({ 'INPUT_SWIFT-TOOLS-VERSION': ` ${value} ` }).swiftToolsVersion, value);
+  }
+});
+
+test('Swift tools version rejects malformed versions and injected manifest content', () => {
+  for (const value of ['6', 'v6.0', '6.0-beta', '6.0.1.2', '6.x', '6.0\nimport Foundation']) {
+    assert.throws(() => config({ 'INPUT_SWIFT-TOOLS-VERSION': value }), /swift-tools-version must be a version/);
   }
 });

@@ -34,7 +34,7 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
     fs.mkdirSync(path.dirname(absolute), { recursive: true });
     fs.writeFileSync(absolute, content);
   };
-  const run = (base: string, head: string, branch: string) => {
+  const run = (base: string, head: string, branch: string, swiftToolsVersion = '') => {
     fs.writeFileSync(eventPath, JSON.stringify({ pull_request: {
       base: { sha: base, repo: { full_name: 'owner/repo' } },
       head: { sha: head, ref: branch, repo: { full_name: 'owner/repo' } },
@@ -48,6 +48,7 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
       GITHUB_OUTPUT: outputPath,
       'INPUT_RESOLVED-FILE': resolved,
       INPUT_SOURCES: src,
+      'INPUT_SWIFT-TOOLS-VERSION': swiftToolsVersion,
     } });
   };
   try {
@@ -90,6 +91,15 @@ test('action commits a sync, repeats as a no-op, and rejects a stale branch push
 
     const second = run(base, synced, 'update');
     assert.equal(second.status, 0, second.stderr);
+    assert.equal(fs.readFileSync(outputPath, 'utf8'), 'changed=false\n');
+
+    const versionChange = run(base, synced, 'update', '6.0');
+    assert.equal(versionChange.status, 0, versionChange.stderr);
+    assert.match(fs.readFileSync(outputPath, 'utf8'), /changed=true/);
+    assert.equal(git(work, 'show', `HEAD:${generated}`), globalUpdated.replace('swift-tools-version: 5.9', 'swift-tools-version: 6.0').trim());
+    assert.equal(git(work, 'show', `HEAD:${src}`), sourceUpdated.trim());
+    const versionRepeat = run(base, git(work, 'rev-parse', 'HEAD'), 'update', '6.0');
+    assert.equal(versionRepeat.status, 0, versionRepeat.stderr);
     assert.equal(fs.readFileSync(outputPath, 'utf8'), 'changed=false\n');
 
     git(work, 'checkout', '-b', 'race', base);

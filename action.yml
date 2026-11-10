@@ -10,6 +10,10 @@ inputs:
   sources:
     description: Newline-separated Package.swift, project.pbxproj, or project.xcproj paths to sync
     required: true
+  swift-tools-version:
+    description: Swift tools version for the generated manifest, in major.minor or major.minor.patch form
+    required: false
+    default: '5.9'
 outputs:
   changed:
     description: Whether the action committed a change

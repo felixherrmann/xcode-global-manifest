@@ -16,6 +16,7 @@ function main() {
         head,
         sources: config.sources,
         globalPath: config.globalPath,
+        swiftToolsVersion: config.swiftToolsVersion,
     });
     const commitSHA = repository.commitAndPush(updates, config);
     const output = commitSHA ? `changed=true\ncommit-sha=${commitSHA}\n` : 'changed=false\n';

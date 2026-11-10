@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { swiftManifest } from '../formats/swift';
+import { DEFAULT_SWIFT_TOOLS_VERSION, swiftManifest } from '../formats/swift';
 import { xcodeProject } from '../formats/xcode-project';
 import type { SourceFile } from '../snapshot';
 
@@ -14,6 +14,7 @@ export type ActionConfig = {
   pullRequest: PullRequest;
   resolvedPath: string;
   globalPath: string;
+  swiftToolsVersion: string;
   sources: SourceFile[];
   watchedPaths: string[];
   outputPath: string;
@@ -34,12 +35,17 @@ export function readConfig(): ActionConfig {
   if (sourcePaths.includes(globalPath)) {
     throw new Error('the generated manifest cannot be a source');
   }
+  const swiftToolsVersion = process.env['INPUT_SWIFT-TOOLS-VERSION']?.trim() || DEFAULT_SWIFT_TOOLS_VERSION;
+  if (!/^\d+\.\d+(?:\.\d+)?$/.test(swiftToolsVersion)) {
+    throw new Error('swift-tools-version must be a version in major.minor or major.minor.patch form, such as 6.0 or 6.0.1');
+  }
 
   return {
     root: required('GITHUB_WORKSPACE'),
     pullRequest,
     resolvedPath,
     globalPath,
+    swiftToolsVersion,
     sources: sourcePaths.map(sourceFile),
     watchedPaths: [...sourcePaths, globalPath],
     outputPath: required('GITHUB_OUTPUT'),

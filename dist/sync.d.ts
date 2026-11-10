@@ -5,6 +5,7 @@ export type SyncInput = {
     head: Files;
     sources: SourceFile[];
     globalPath: string;
+    swiftToolsVersion?: string;
 };
 /** Read dependencies, reconcile both directions, then render only changed files. */
-export declare function synchronize({ base, head, sources, globalPath }: SyncInput): Files;
+export declare function synchronize({ base, head, sources, globalPath, swiftToolsVersion }: SyncInput): Files;

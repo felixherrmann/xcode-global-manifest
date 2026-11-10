@@ -83,6 +83,40 @@ test('source edits regenerate a sorted global manifest; repeated sync is a no-op
   assert.deepEqual(sync(after, after, updates['workspace/Package.swift']), {});
 });
 
+test('changing only the configured tools version updates the global manifest; repeated sync is a no-op', () => {
+  const source = manifest('exact: "1.0.0"');
+  const global = generate(new Map([[url, { rule: { kind: 'exact', value: '1.0.0' } }]]));
+  const files = { 'Packages/App/Package.swift': source, 'workspace/Package.swift': global };
+  const input = {
+    base: files,
+    head: files,
+    globalPath: 'workspace/Package.swift',
+    sources: [{ file: 'Packages/App/Package.swift', format: swiftManifest }],
+    swiftToolsVersion: '6.0',
+  };
+  const updates = synchronize(input);
+  assert.deepEqual(updates, { 'workspace/Package.swift': global.replace('swift-tools-version: 5.9', 'swift-tools-version: 6.0') });
+  assert.deepEqual(synchronize({ ...input, head: { ...files, ...updates } }), {});
+});
+
+test('the configured tools version is used for first generation and dependency changes', () => {
+  const source = manifest('exact: "1.0.0"');
+  const files = { 'Packages/App/Package.swift': source };
+  const input = {
+    base: files,
+    head: files,
+    globalPath: 'workspace/Package.swift',
+    sources: [{ file: 'Packages/App/Package.swift', format: swiftManifest }],
+    swiftToolsVersion: '6.0.1',
+  };
+  const created = synchronize(input);
+  assert.match(created['workspace/Package.swift'], /^\/\/ swift-tools-version: 6\.0\.1\n/);
+  const base = { ...files, ...created };
+  const updates = synchronize({ ...input, base, head: { ...base, 'Packages/App/Package.swift': manifest('exact: "1.1.0"') } });
+  assert.match(updates['workspace/Package.swift'], /^\/\/ swift-tools-version: 6\.0\.1\n/);
+  assert.match(updates['workspace/Package.swift'], /exact: "1\.1\.0"/);
+});
+
 test('global edits change existing source requirements while retaining source-only arguments', () => {
   const before = manifest('exact: "1.0.0"', ', traits: ["Minimal"]');
   const global = generate(new Map([[url, { rule: { kind: 'exact', value: '1.0.0' } }]]));

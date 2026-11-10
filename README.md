@@ -100,8 +100,11 @@ Keep both the generated `Package.swift` and the shared `Package.resolved` under 
 | --- | --- | --- |
 | `resolved-file` | Yes | Repository-relative path to the shared `Package.resolved` in a standalone `.xcworkspace` or a project's internal workspace. The generated `Package.swift` is placed in the same directory. |
 | `sources` | Yes | Newline-separated, repository-relative paths to `Package.swift`, `project.pbxproj`, or `project.xcproj` files whose dependencies should be included. |
+| `swift-tools-version` | No | Swift tools version written to the generated manifest's `// swift-tools-version:` header. Defaults to `5.9`; accepts `major.minor` or `major.minor.patch`, such as `'6.0'` or `'6.0.1'`. |
 
 All paths must point to regular files inside the repository. At least one path is required under `sources`; you can list Swift manifests, Xcode projects, or both. Do not include the generated manifest.
+
+To select a different tools version, add `swift-tools-version: '6.0'` under the action's `with:` block. Changing this input updates the generated manifest even when dependencies are unchanged. Source manifests keep their own tools versions.
 
 ## Outputs
 

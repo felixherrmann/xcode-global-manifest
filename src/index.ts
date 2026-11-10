@@ -13,6 +13,7 @@ function main(): void {
     head,
     sources: config.sources,
     globalPath: config.globalPath,
+    swiftToolsVersion: config.swiftToolsVersion,
   });
   const commitSHA = repository.commitAndPush(updates, config);
 

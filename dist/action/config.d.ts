@@ -19,6 +19,7 @@ export type ActionConfig = {
     pullRequest: PullRequest;
     resolvedPath: string;
     globalPath: string;
+    swiftToolsVersion: string;
     sources: SourceFile[];
     watchedPaths: string[];
     outputPath: string;
